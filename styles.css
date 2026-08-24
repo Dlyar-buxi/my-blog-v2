@@ -1,0 +1,17 @@
+:root{
+  --bg:#f7f7fb;
+  --card:#ffffff;
+  --text:#222;
+  --accent:#2b7cff;
+  --muted:#666;
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+.site-header{background:var(--card);padding:36px 20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.tagline{color:var(--muted);margin-top:8px}
+.content{max-width:900px;margin:28px auto;padding:0 20px}
+.content section{background:var(--card);padding:18px;border-radius:8px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,0.03)}
+.site-footer{text-align:center;padding:18px;color:var(--muted);font-size:14px}
+a{color:var(--accent);text-decoration:none}
