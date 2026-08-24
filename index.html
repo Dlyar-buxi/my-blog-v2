@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的博客 - CAU通信专业</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <!-- 顶部时间 -->
+  <div class="time-bar">
+    <span>🕐 当前时间：{{ currentTime }}</span>
+  </div>
+
+
+  <!-- 头部 -->
+  <header>
+    <h1>欢迎来到我的博客</h1>
+    <p>中国农业大学 通信工程专业</p>
+  </header>
+
+  <main>
+    <!-- 文章列表 -->
+    <section class="articles">
+      <h2 style="color: white; margin-bottom: 15px;">📝 最新文章</h2>
+      <article v-for="article in articles" :key="article.id" class="card">
+        <h2 @click="viewArticle(article)" style="cursor: pointer;">{{ article.title }}</h2>
+        <p class="article-meta">📅 {{ article.date }} | 👤 {{ article.author }}</p>
+        <p>{{ article.content }}</p>
+        <div style="display: flex; gap: 10px;">
+          <button @click="editArticle(article)" class="btn-edit">✏️ 编辑</button>
+          <button @click="deleteArticle(article.id)" class="btn-delete">🗑️ 删除</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- 侧边栏 -->
+    <aside>
+      <!-- 关于我 -->
+      <section class="card">
+        <h2>👨‍🎓 关于我</h2>
+        <p>我是中国农业大学通信专业的大三学生，正在学习Web开发技能。</p>
+        <p>目标是：大三结束前积累2-3个完整项目，争取明年暑假进大厂实习！</p>
+      </section>
+
+      <!-- 学习计划 -->
+      <section class="card">
+        <h2>📚 学习计划</h2>
+        <ul>
+          <li>第1周：HTML/CSS/JS基础 ✅ 完成</li>
+          <li>第2周：Node.js后端开发 ✅ 完成</li>
+          <li>第3周：Vue3前端框架 🔥 进行中</li>
+          <li>第4周：项目完善</li>
+        </ul>
+      </section>
+
+      <!-- 技术栈 -->
+      <section class="card">
+        <h2>🛠️ 技术栈</h2>
+        <div class="tags">
+          <span class="tag">HTML</span>
+          <span class="tag">CSS</span>
+          <span class="tag">JavaScript</span>
+          <span class="tag">Node.js</span>
+          <span class="tag">Vue3</span>
+        </div>
+      </section>
+
+      <!-- 发布文章 -->
+      <section class="card">
+        <h2>✍️ 发布新文章</h2>
+        <form @submit.prevent="publishArticle">
+          <input v-model="newArticle.title" type="text" placeholder="文章标题" class="input-field">
+          <textarea v-model="newArticle.content" placeholder="文章内容" rows="4" class="input-field"></textarea>
+          <button type="submit" class="btn-publish">🚀 发布</button>
+        </form>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    <p>© 2026 我的博客 - 持续更新中...</p>
+  </footer>
+
+  <!-- 文章详情弹窗 -->
+  <div v-if="showDetail" class="modal" @click.self="closeDetail">
+    <div class="modal-content">
+      <span class="close" @click="closeDetail">&times;</span>
+      <h2>{{ selectedArticle.title }}</h2>
+      <p class="article-meta">📅 {{ selectedArticle.date }} | 👤 {{ selectedArticle.author }}</p>
+      <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+      <p style="line-height: 1.8; color: #333;">{{ selectedArticle.content }}</p>
+    </div>
+  </div>
+
+  <!-- 编辑文章弹窗 -->
+  <div v-if="editingArticle" class="modal" @click.self="cancelEdit">
+    <div class="modal-content">
+      <h2>✏️ 编辑文章</h2>
+      <form @submit.prevent="saveEdit">
+        <input v-model="editingArticle.title" type="text" class="input-field" placeholder="文章标题">
+        <textarea v-model="editingArticle.content" rows="6" class="input-field" placeholder="文章内容"></textarea>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn-publish">💾 保存</button>
+          <button type="button" @click="cancelEdit" class="btn-cancel">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="vue-app.js"></script>
+</body>
+</html>
