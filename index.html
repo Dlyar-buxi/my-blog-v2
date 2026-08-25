@@ -3,106 +3,339 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的博客 - CAU通信专业</title>
+  <title>博客 - CAU通信</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div id="app">
-  <!-- 顶部时间 -->
-  <div class="time-bar">
-    <span>🕐 当前时间：{{ currentTime }}</span>
+  <!-- 顶部导航 -->
+  <div class="top-nav">
+    <div class="logo">B</div>
+    <span class="title">{{ pageTitle }}</span>
+    <span></span>
   </div>
 
-  <!-- 头部 -->
-  <header>
-    <h1>欢迎来到我的博客</h1>
-    <p>中国农业大学 通信工程专业</p>
-  </header>
-
-  <main>
-    <!-- 文章列表 -->
-    <section class="articles">
-      <h2 style="color: white; margin-bottom: 15px;">📝 最新文章</h2>
-      <article v-for="article in articles" :key="article.id" class="card">
-        <h2 @click="viewArticle(article)" style="cursor: pointer;">{{ article.title }}</h2>
-        <p class="article-meta">📅 {{ article.date }} | 👤 {{ article.author }}</p>
-        <p>{{ article.content }}</p>
-        <div style="display: flex; gap: 10px;">
-          <button @click="editArticle(article)" class="btn-edit">✏️ 编辑</button>
-          <button @click="deleteArticle(article.id)" class="btn-delete">🗑️ 删除</button>
+  <!-- 主内容区 -->
+  <div class="main-content">
+    
+    <!-- 首页 - 时间线 -->
+    <div v-show="currentTab === 'home'" class="home-page">
+      <div 
+        v-for="(article, index) in articles" 
+        :key="article.id"
+        class="post-card"
+        @click="viewArticle(article)"
+      >
+        <div class="avatar">{{ article.author.charAt(0) }}</div>
+        <div class="content">
+          <div class="header">
+            <span class="username">{{ article.author }}</span>
+            <span class="userid">@cau</span>
+            <span class="time">{{ article.date }}</span>
+          </div>
+          <p :class="['text', { truncated: article.content.length > 500 }]">{{ article.content }}</p>
+          <img v-if="article.coverImage && article.coverImage.length > 10" :src="article.coverImage" class="cover-image">
+          <div class="actions" @click.stop>
+            <div class="action reply" @click="replyArticle(article)">
+              <span class="icon">💬</span><span>{{ article.replies || 0 }}</span>
+            </div>
+            <div class="action repost" @click="repostArticle(article)">
+              <span class="icon">🔄</span><span>{{ article.reposts || 0 }}</span>
+            </div>
+            <div :class="['action', 'like', { liked: likedArticles.has(article.id) }]" @click="likeArticle(article)">
+              <span class="icon">❤️</span><span>{{ article.likes || 0 }}</span>
+            </div>
+            <div :class="['action', 'bookmark', { bookmarked: bookmarkedArticles.has(article.id) }]" @click="bookmarkArticle(article)">
+              <span class="icon">🔖</span>
+            </div>
+          </div>
         </div>
-      </article>
-    </section>
+      </div>
+      
+      <div v-if="articles.length === 0" class="empty-state">
+        <p>📭 还没有任何内容</p>
+        <p>点击底部「+」发布第一篇吧！</p>
+      </div>
+    </div>
 
-    <!-- 侧边栏 -->
-    <aside>
-      <!-- 关于我 -->
-      <section class="card">
-        <h2>👨‍🎓 关于我</h2>
-        <p>我是中国农业大学通信专业的大三学生，正在学习Web开发技能。</p>
-        <p>目标是：大三结束前积累2-3个完整项目，争取明年暑假进大厂实习！</p>
-      </section>
+    <!-- 搜索页面 -->
+    <div v-show="currentTab === 'search'" class="search-page">
+      <div class="search-box">
+        <span>🔍</span>
+        <input 
+          v-model="searchKeyword" 
+          @input="handleSearch"
+          type="text" 
+          placeholder="搜索内容..."
+        >
+      </div>
+      
+      <div class="tags">
+        <span 
+          v-for="cat in categories" 
+          :key="cat"
+          :class="['tag', { active: selectedCategory === cat }]"
+          @click="filterByCategory(cat)"
+        >{{ cat }}</span>
+      </div>
 
-      <!-- 学习计划 -->
-      <section class="card">
-        <h2>📚 学习计划</h2>
-        <ul>
-          <li>第1周：HTML/CSS/JS基础 ✅ 完成</li>
-          <li>第2周：Node.js后端开发 ✅ 完成</li>
-          <li>第3周：Vue3前端框架 🔥 进行中</li>
-          <li>第4周：项目完善</li>
-        </ul>
-      </section>
-
-      <!-- 技术栈 -->
-      <section class="card">
-        <h2>🛠️ 技术栈</h2>
-        <div class="tags">
-          <span class="tag">HTML</span>
-          <span class="tag">CSS</span>
-          <span class="tag">JavaScript</span>
-          <span class="tag">Node.js</span>
-          <span class="tag">Vue3</span>
+      <div class="search-results">
+        <div 
+          v-for="article in filteredArticles" 
+          :key="article.id"
+          class="post-card"
+          @click="viewArticle(article)"
+        >
+          <div class="avatar">{{ article.author.charAt(0) }}</div>
+          <div class="content">
+            <div class="header">
+              <span class="username">{{ article.author }}</span>
+              <span class="userid">@cau</span>
+              <span class="time">{{ article.date }}</span>
+            </div>
+            <p class="text">{{ article.content }}</p>
+          </div>
         </div>
-      </section>
+      </div>
+    </div>
 
-      <!-- 发布文章 -->
-      <section class="card">
-        <h2>✍️ 发布新文章</h2>
-        <form @submit.prevent="publishArticle">
-          <input v-model="newArticle.title" type="text" placeholder="文章标题" class="input-field">
-          <textarea v-model="newArticle.content" placeholder="文章内容" rows="4" class="input-field"></textarea>
-          <button type="submit" class="btn-publish">🚀 发布</button>
-        </form>
-      </section>
-    </aside>
-  </main>
+    <!-- 发布页面 -->
+    <div v-show="currentTab === 'compose'" class="compose-page">
+      <div class="header">
+        <span class="close-btn" @click="currentTab = 'home'">✕</span>
+        <button 
+          class="post-btn" 
+          :disabled="!newArticle.content"
+          @click="publishArticle"
+        >发布</button>
+      </div>
+      
+      <div class="compose-form">
+        <div class="avatar">U</div>
+        <div class="form-content">
+          <textarea 
+            v-model="newArticle.content" 
+            placeholder="分享你的想法..."
+            @input="updateCounter"
+          ></textarea>
+          
+          <div class="tools">
+            <span class="tool" @click="triggerImageUpload">🖼️</span>
+            <span class="tool" @click="triggerAttachmentUpload">📎</span>
+            <span class="tool">📍</span>
+            <span class="tool">🔗</span>
+          </div>
+          
+          <div class="counter">{{ charCount }}/{{ MAX_CHARS }}</div>
+          
+          <input 
+            type="file" 
+            ref="imageInput" 
+            @change="handleImageUpload" 
+            accept="image/*" 
+            multiple
+            style="display: none;"
+          >
+          
+          <input 
+            type="file" 
+            name="attachment"
+            @change="handleAttachmentUpload" 
+            style="display: none;"
+          >
+          
+          <div v-if="newArticle.coverImages.length > 0" class="uploaded-images">
+            <div v-for="(img, index) in newArticle.coverImages" :key="index" class="image-upload-item">
+              <img :src="img">
+              <span class="remove-btn" @click="removeImage(index)">✕</span>
+            </div>
+          </div>
+          
+          <div v-if="newArticle.attachment" style="margin-top: 10px; color: var(--text-secondary);">
+            📎 附件: {{ newArticle.attachment }}
+          </div>
+          
+          <select v-model="newArticle.language" class="language-select">
+            <option value="zh-CN">中文</option>
+            <option value="en-US">English</option>
+            <option value="ja-JP">日本語</option>
+            <option value="ko-KR">한국어</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-  <footer>
-    <p>© 2026 我的博客 - 持续更新中...</p>
-  </footer>
+    <!-- 通知页面 -->
+    <div v-show="currentTab === 'notify'" class="notify-page">
+      <div class="tab">
+        <div :class="['tab-item', { active: notifyTab === 'all' }]" @click="notifyTab = 'all'">
+          全部
+        </div>
+        <div :class="['tab-item', { active: notifyTab === 'mention' }]" @click="notifyTab = 'mention'">
+          提及
+        </div>
+      </div>
+
+      <div class="notify-list">
+        <div 
+          v-for="(notify, index) in notifications" 
+          :key="index"
+          class="notify-item"
+          @click="handleNotifyClick(notify)"
+        >
+          <div class="notify-icon">{{ notify.icon }}</div>
+          <div class="notify-content">
+            <p class="notify-text">{{ notify.text }}</p>
+            <p class="notify-time">{{ notify.time }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="notifications.length === 0" class="empty-state">
+        <p>🔔 暂无新通知</p>
+      </div>
+    </div>
+
+    <!-- 个人页面 -->
+    <div v-show="currentTab === 'profile'" class="profile-page">
+      <div class="profile-header">
+        <div class="banner banner-clickable" @click="editBanner"></div>
+        <div class="profile-info">
+          <div class="avatar-large" @click="editAvatar">{{ userProfile.avatar }}</div>
+          <button class="edit-btn" @click="editProfile">编辑资料</button>
+          <h2 class="username">{{ userProfile.username }}</h2>
+          <p class="userid">{{ userProfile.userid }}</p>
+          <p class="bio">{{ userProfile.bio }}</p>
+          <p style="margin-top: 8px; color: var(--text-secondary); font-size: 0.95em;">✉️ {{ userProfile.email }}</p>
+          
+          <div class="stats">
+            <div class="stat-item" @click="currentTab = 'home'">
+              <span>{{ articles.length }}</span><span>文章</span>
+            </div>
+            <div class="stat-item">
+              <span>3</span><span>项目</span>
+            </div>
+            <div class="stat-item">
+              <span>1</span><span>年</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-item" @click="handleMenuClick('articles')">
+          <div class="left"><span class="icon">📝</span> <span class="text">我的文章</span></div>
+          <span>›</span>
+        </div>
+        <div class="menu-item" @click="handleMenuClick('likes')">
+          <div class="left"><span class="icon">❤️</span> <span class="text">点赞收藏</span></div>
+          <span>›</span>
+        </div>
+        <div class="menu-item" @click="handleMenuClick('settings')">
+          <div class="left"><span class="icon">⚙️</span> <span class="text">设置</span></div>
+          <span>›</span>
+        </div>
+        <div class="menu-item" @click="handleMenuClick('about')">
+          <div class="left"><span class="icon">💡</span> <span class="text">关于</span></div>
+          <span>›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="bottom-nav">
+    <div :class="['nav-item', { active: currentTab === 'home' }]" @click="currentTab = 'home'">
+      <span class="icon">🏠</span>
+      <span>首页</span>
+    </div>
+    <div :class="['nav-item', { active: currentTab === 'search' }]" @click="currentTab = 'search'">
+      <span class="icon">🔍</span>
+      <span>搜索</span>
+    </div>
+    <div class="nav-item add-btn" @click="currentTab = 'compose'">
+      <span class="icon">✏️</span>
+    </div>
+    <div :class="['nav-item', { active: currentTab === 'notify' }]" @click="currentTab = 'notify'">
+      <span class="icon">🔔</span>
+      <span>通知</span>
+    </div>
+    <div :class="['nav-item', { active: currentTab === 'profile' }]" @click="currentTab = 'profile'">
+      <span class="icon">👤</span>
+      <span>我的</span>
+    </div>
+  </div>
 
   <!-- 文章详情弹窗 -->
   <div v-if="showDetail" class="modal" @click.self="closeDetail">
     <div class="modal-content">
-      <span class="close" @click="closeDetail">&times;</span>
-      <h2>{{ selectedArticle.title }}</h2>
-      <p class="article-meta">📅 {{ selectedArticle.date }} | 👤 {{ selectedArticle.author }}</p>
-      <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
-      <p style="line-height: 1.8; color: #333;">{{ selectedArticle.content }}</p>
+      <div class="detail-page">
+        <div class="header">
+          <span class="back-btn" @click="closeDetail">‹</span>
+          <span>详情</span>
+          <span></span>
+        </div>
+        
+        <div class="post-card">
+          <div class="avatar">{{ selectedArticle.author.charAt(0) }}</div>
+          <div class="content">
+            <div class="header">
+              <span class="username">{{ selectedArticle.author }}</span>
+              <span class="userid">@cau</span>
+              <span class="time">{{ selectedArticle.date }}</span>
+            </div>
+            <p class="text">{{ selectedArticle.content }}</p>
+            <img v-if="selectedArticle.coverImage && selectedArticle.coverImage.length > 10" :src="selectedArticle.coverImage" class="cover-image">
+            <div class="actions">
+              <div class="action reply" @click="replyArticle(selectedArticle)">
+                <span class="icon">💬</span><span>{{ selectedArticle.replies || 0 }}</span>
+              </div>
+              <div class="action repost" @click="repostArticle(selectedArticle)">
+                <span class="icon">🔄</span><span>{{ selectedArticle.reposts || 0 }}</span>
+              </div>
+              <div :class="['action', 'like', { liked: likedArticles.has(selectedArticle.id) }]" @click="likeArticle(selectedArticle)">
+                <span class="icon">❤️</span><span>{{ selectedArticle.likes || 0 }}</span>
+              </div>
+              <div :class="['action', 'bookmark', { bookmarked: bookmarkedArticles.has(selectedArticle.id) }]" @click="bookmarkArticle(selectedArticle)">
+                <span class="icon">🔖</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="edit-actions">
+          <button @click="editArticle(selectedArticle); closeDetail();" class="btn btn-edit">✏️ 编辑</button>
+          <button @click="deleteArticle(selectedArticle.id); closeDetail();" class="btn btn-delete">🗑️ 删除</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 编辑文章弹窗 -->
-  <div v-if="editingArticle" class="modal" @click.self="cancelEdit">
+  <!-- 回复弹窗 -->
+  <div v-if="replyingTo" class="modal reply-modal" @click.self="cancelReply">
     <div class="modal-content">
-      <h2>✏️ 编辑文章</h2>
+      <h3>回复 @{{ replyingTo.author }}</h3>
+      <textarea 
+        v-model="replyContent" 
+        placeholder="写下你的回复..."
+      ></textarea>
+      <div class="form-buttons">
+        <button @click="sendReply" class="btn btn-send">发送回复</button>
+        <button @click="cancelReply" class="btn btn-cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <div v-if="editingArticle" class="modal edit-modal" @click.self="cancelEdit">
+    <div class="modal-content">
+      <h3>✏️ 编辑文章</h3>
       <form @submit.prevent="saveEdit">
-        <input v-model="editingArticle.title" type="text" class="input-field" placeholder="文章标题">
-        <textarea v-model="editingArticle.content" rows="6" class="input-field" placeholder="文章内容"></textarea>
-        <div style="display: flex; gap: 10px;">
-          <button type="submit" class="btn-publish">💾 保存</button>
-          <button type="button" @click="cancelEdit" class="btn-cancel">取消</button>
+        <input v-model="editingArticle.title" type="text" placeholder="标题">
+        <textarea v-model="editingArticle.content" rows="6" placeholder="内容"></textarea>
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-save">💾 保存</button>
+          <button type="button" @click="cancelEdit" class="btn btn-cancel">取消</button>
         </div>
       </form>
     </div>
